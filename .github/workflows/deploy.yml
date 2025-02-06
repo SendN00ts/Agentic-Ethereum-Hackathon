@@ -1,0 +1,28 @@
+name: Deploy Tweet Bot
+
+on:
+ push:
+   branches: [ main ]
+ workflow_dispatch:
+
+jobs:
+ deploy:
+   runs-on: ubuntu-latest
+
+   steps:
+   - uses: actions/checkout@v2
+
+   - name: Set up Node.js
+     uses: actions/setup-node@v2
+     with:
+       node-version: '18'
+
+   - name: Install dependencies
+     run: npm install
+
+   - name: Run application
+     env:
+       AGENT_URL: ${{ secrets.AGENT_URL }}
+       AUTH_HEADER: ${{ secrets.AUTH_HEADER }}
+       POST_INTERVAL: ${{ secrets.POST_INTERVAL }}
+     run: npm start
