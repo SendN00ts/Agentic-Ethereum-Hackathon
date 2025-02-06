@@ -1,28 +1,31 @@
-name: Deploy Tweet Bot
+name: Deploy to Heroku
 
 on:
- push:
-   branches: [ main ]
- workflow_dispatch:
+  push:
+    branches: [ main ]
+  workflow_dispatch:
 
 jobs:
- deploy:
-   runs-on: ubuntu-latest
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      
+      - name: Set up Node.js
+        uses: actions/setup-node@v2
+        with:
+          node-version: '18'
 
-   steps:
-   - uses: actions/checkout@v2
-
-   - name: Set up Node.js
-     uses: actions/setup-node@v2
-     with:
-       node-version: '18'
-
-   - name: Install dependencies
-     run: npm install
-
-   - name: Run application
-     env:
-       AGENT_URL: ${{ secrets.AGENT_URL }}
-       AUTH_HEADER: ${{ secrets.AUTH_HEADER }}
-       POST_INTERVAL: ${{ secrets.POST_INTERVAL }}
-     run: npm start
+      - name: Install dependencies
+        run: npm install
+        
+      - name: Deploy to Heroku
+        uses: akhileshns/heroku-deploy@v3.12.12
+        with:
+          heroku_api_key: ${{ secrets.HEROKU_API_KEY }}
+          heroku_app_name: ${{ secrets.HEROKU_APP_NAME }}
+          heroku_email: ${{ secrets.HEROKU_EMAIL }}
+        env:
+          HD_AGENT_URL: ${{ secrets.AGENT_URL }}
+          HD_AUTH_HEADER: ${{ secrets.AUTH_HEADER }}
+          HD_POST_INTERVAL: ${{ secrets.POST_INTERVAL }}

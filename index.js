@@ -8,6 +8,12 @@ const config = {
   interval: parseInt(process.env.POST_INTERVAL || '14400000'), // 4 hours default
 };
 
+// After config initialization
+console.log('Environment check:');
+console.log('Agent URL configured:', !!config.agentUrl);
+console.log('Auth Header configured:', !!config.authHeader);
+console.log('Interval configured:', config.interval);
+
 // Array of different prompts
 const prompts = [
   "tweet about underground music scenes",
