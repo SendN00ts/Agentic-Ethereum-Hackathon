@@ -16,12 +16,12 @@ console.log('Interval configured:', config.interval);
 
 // Array of different prompts
 const prompts = [
-  "tweet about underground music scenes",
-  "share a hot take about k-pop",
-  "post about DIY music culture",
+  "share a hot take about a music genre",
+  "share a hot take about a music style",
+  "share a hot take about an music artists",
+  "Post a music recommendation of the day and link the song on youtube",
   "tweet about emerging music trends",
-  "discuss the future of underground music",
-  "share thoughts on music production trends"
+  "share your thoughts about a topic regarding music"
 ];
 
 // Main tweet function
