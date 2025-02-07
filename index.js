@@ -4,7 +4,7 @@ const axios = require('axios');
 const config = {
  agentUrl: process.env.AGENT_URL,
  authHeader: process.env.AUTH_HEADER,
- interval: parseInt(process.env.POST_INTERVAL || '3600000'),
+ interval: parseInt(process.env.POST_INTERVAL || '300000'),
  timezone: process.env.TIMEZONE || 'Europe/Berlin',
  //optimalPostTimes: [7, 11, 15, 19],
  minEngagementThreshold: 5,
