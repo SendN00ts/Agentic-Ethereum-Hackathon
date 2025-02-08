@@ -8,7 +8,8 @@ const config = {
   authHeader: process.env.AUTH_HEADER,
   interval: parseInt(process.env.POST_INTERVAL || '1200000'), // 20 minutes in milliseconds
   timezone: process.env.TIMEZONE || 'Europe/Berlin',
-  minEngagementThreshold: 5
+  minEngagementThreshold: 5,
+  youtubeApiKey: process.env.YOUTUBE_API_KEY // Add YouTube API Key from .env
 };
 
 console.log('Checking environment variables...');
@@ -17,7 +18,8 @@ console.log('Environment check:', {
   hasAuthHeader: !!config.authHeader,
   hasInterval: !!config.interval,
   intervalValue: config.interval,
-  timezone: config.timezone
+  timezone: config.timezone,
+  hasYouTubeApiKey: !!config.youtubeApiKey
 });
 
 const currentDate = new Date();
@@ -31,8 +33,8 @@ const prompts = [
   "share an underrated track with its YouTube link - what makes it special? Make it not exceed 280 characters and post it.",
   "pick an essential song, drop the YouTube link, and tell us its impact. Make it not exceed 280 characters and post it.",
   "share your thoughts about a topic regarding music. Make it not exceed 280 characters and post it.",
-  "share a music history fact. Make it exceed 280 characters and post it.",
-  "Share album anniversary celebrations of famous albums. Make it exceed not 280 characters and post it.",
+  "share a music history fact that actually not everyone knows. Make it not exceed 280 characters and post it.",
+  "Share album anniversary celebrations of famous albums. Make it not exceed 280 characters and post it.",
   "which classic album deserves another listen? Make it not exceed 280 characters and post it.",
   "share a song that changed your view of music lately? Make it not exceed 280 characters and post it."
 ];
@@ -43,62 +45,55 @@ function cleanURL(url) {
   return url.replace(/\s+/g, '');
 }
 
-function isValidMusicContent(response) {
-  if (response.includes('youtube')) {
-    response = response.replace(/https?:\/\/[^\s]+/g, (url) => cleanURL(url));
-  }
-  const cryptoTerms = ['crypto', 'etf', 'market', 'bitcoin', 'solana', 'xrp', 'yield', 'investment', 'trading', 'price'];
-  const musicTerms = ['music', 'song', 'artist', 'band', 'album', 'genre', 'track', 'sound'];
-  
-  return !cryptoTerms.some(term => response.toLowerCase().includes(term)) &&
-         musicTerms.some(term => response.toLowerCase().includes(term));
-}
+// ✅ Fetch YouTube Link for a Song
+async function getYouTubeLink(songTitle) {
+    const query = encodeURIComponent(songTitle + " official music video");
+    const url = `https://www.googleapis.com/youtube/v3/search?part=snippet&q=${query}&type=video&maxResults=1&key=${config.youtubeApiKey}`;
 
-async function checkTweetEngagement(tweetId) {
-  try {
-    const response = await axios.get(`${config.agentUrl}/tweet/${tweetId}`, {
-      headers: {
-        'Authorization': config.authHeader,
-        'Content-Type': 'application/json'
-      }
-    });
-    
-    return {
-      likes: response.data.likes || 0,
-      replies: response.data.replies || 0,
-      retweets: response.data.retweets || 0
-    };
-  } catch (error) {
-    console.error('Error checking engagement:', error);
-    return null;
-  }
-}
-
-async function trackEngagement() {
-  for (const tweet of tweetHistory.slice(-10)) {
-    const engagement = await checkTweetEngagement(tweet.id);
-    if (engagement) {
-      tweet.engagement = engagement;
-      const totalEngagement = engagement.likes + engagement.retweets + engagement.replies;
-      
-      if (totalEngagement > config.minEngagementThreshold) {
-        console.log(`High engagement tweet:`, {
-          prompt: tweet.prompt,
-          engagement: totalEngagement
-        });
-      }
+    try {
+        const response = await axios.get(url);
+        if (response.data.items.length > 0) {
+            const videoId = response.data.items[0].id.videoId;
+            return `https://www.youtube.com/watch?v=${videoId}`;
+        } else {
+            return null; // No result found
+        }
+    } catch (error) {
+        console.error("YouTube API Error:", error);
+        return null;
     }
-  }
+}
+
+// ✅ Ensure Tweets Stay Within 280 Characters
+function truncateTweet(text) {
+    return text.length > 280 ? text.slice(0, 277) + "..." : text;
 }
 
 async function sendTweet() {
   try {
     const randomPrompt = prompts[Math.floor(Math.random() * prompts.length)];
     console.log(`Attempting to send tweet with prompt: ${randomPrompt}`);
-    
+
+    let tweetText = randomPrompt;
+
+    // Check if the prompt involves a song recommendation and fetch a YouTube link
+    if (randomPrompt.includes("recommend a song") || randomPrompt.includes("underrated track") || randomPrompt.includes("essential song")) {
+        let songRecommendation = "David Bowie – Life on Mars?"; // Replace with AI-generated song title
+        let youtubeLink = await getYouTubeLink(songRecommendation);
+
+        if (youtubeLink) {
+            tweetText = `${songRecommendation} - a song that defined an era. Listen here: ${youtubeLink}`;
+        } else {
+            tweetText = `${songRecommendation} - an iconic track. Look it up!`;
+        }
+    }
+
+    // Truncate the tweet if needed
+    tweetText = truncateTweet(tweetText);
+
     const response = await axios.post(config.agentUrl, {
       user: "Synthereum",
-      text: randomPrompt,
+      text: tweetText,
       action: "POST",
       forceAction: true,
       shouldTweet: true
@@ -113,11 +108,6 @@ async function sendTweet() {
 
     if (response.data && response.data.text) {
       const tweetContent = response.data.text.replace(/https?:\/\/[^\s]+/g, (url) => cleanURL(url));
-      
-      if (!isValidMusicContent(tweetContent)) {
-        console.log('Non-music content detected, retrying...');
-        return false;
-      }
 
       if (response.data.id) {
         tweetHistory.push({
@@ -150,7 +140,7 @@ async function sendTweetWithRetry(maxRetries = 3, delay = 5000) {
   for (let i = 0; i < maxRetries; i++) {
     const success = await sendTweet();
     if (success) return true;
-    
+
     console.log(`Attempt ${i + 1} failed. ${i < maxRetries - 1 ? 'Retrying in ' + delay/1000 + ' seconds...' : 'No more retries.'}`);
     if (i < maxRetries - 1) {
       await new Promise(resolve => setTimeout(resolve, delay));
@@ -161,13 +151,13 @@ async function sendTweetWithRetry(maxRetries = 3, delay = 5000) {
 
 async function start() {
   console.log('Starting tweet automation...');
-  console.log(`Tweet interval set to ${config.interval/1000} seconds`);
+  console.log(`Tweet interval set to ${config.interval / 1000} seconds`);
   console.log('Creating initial tweet...');
-  
+
   await sendTweetWithRetry();
-  
+
   console.log('Setting up intervals...');
-  
+
   setInterval(async () => {
     console.log('Running scheduled tweet...');
     await sendTweetWithRetry();
