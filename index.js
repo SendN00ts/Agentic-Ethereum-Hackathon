@@ -4,11 +4,11 @@ const axios = require('axios');
 const config = {
  agentUrl: process.env.AGENT_URL,
  authHeader: process.env.AUTH_HEADER,
- interval: parseInt(process.env.POST_INTERVAL || '300000'),
+ interval: parseInt(process.env.POST_INTERVAL || '1200000'),
  timezone: process.env.TIMEZONE || 'Europe/Berlin',
  //optimalPostTimes: [7, 11, 15, 19],
  minEngagementThreshold: 5,
- pollInterval: 24 * 60 * 60 * 1000
+ //pollInterval: 24 * 60 * 60 * 1000
 };
 
 console.log('Environment check:');
