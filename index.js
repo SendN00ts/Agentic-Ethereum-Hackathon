@@ -37,15 +37,6 @@ const prompts = [
   "share a song that changed your view of music lately?"
 ];
 
-const pollTypes = [
-  "whos the better artist in GENRE?", 
-  "Most influential between GENRE1 vs GENRE2 artist?",
-  "Better voice: ARTIST1 or ARTIST2?",
-  "More innovative sound: ARTIST1 or ARTIST2?",
-  "Most impactful album: ALBUM1 or ALBUM2?",
-  "Better live performer: ARTIST1 or ARTIST2?"
-];
-
 const tweetHistory = [];
 
 function cleanURL(url) {
@@ -61,31 +52,6 @@ function isValidMusicContent(response) {
   
   return !cryptoTerms.some(term => response.toLowerCase().includes(term)) &&
          musicTerms.some(term => response.toLowerCase().includes(term));
-}
-
-async function createPoll() {
-  try {
-    const randomPollType = pollTypes[Math.floor(Math.random() * pollTypes.length)];
-    console.log('Creating poll:', randomPollType);
-    
-    const response = await axios.post(config.agentUrl, {
-      user: "Synthereum",
-      text: `Create a music poll: ${randomPollType}`,
-      action: "Poll",
-      forceAction: true
-    }, {
-      headers: {
-        'Authorization': config.authHeader,
-        'Content-Type': 'application/json'
-      }
-    });
-
-    console.log('Poll created successfully');
-    return response.data;
-  } catch (error) {
-    console.error('Poll creation error:', error);
-    return null;
-  }
 }
 
 async function checkTweetEngagement(tweetId) {
@@ -130,11 +96,12 @@ async function sendTweet() {
     const randomPrompt = prompts[Math.floor(Math.random() * prompts.length)];
     console.log(`Attempting to send tweet with prompt: ${randomPrompt}`);
     
-    // First, get content generation
-    const generateResponse = await axios.post(config.agentUrl, {
+    const response = await axios.post(config.agentUrl, {
       user: "Synthereum",
       text: randomPrompt,
-      action: "NONE"  // First get content
+      action: "POST",
+      forceAction: true,
+      shouldTweet: true
     }, {
       headers: {
         'Authorization': config.authHeader,
@@ -142,36 +109,19 @@ async function sendTweet() {
       }
     });
 
-    console.log('Content generation response:', generateResponse.data);
+    console.log('Tweet response:', response.data);
 
-    if (generateResponse.data && generateResponse.data.text) {
-      const tweetContent = generateResponse.data.text.replace(/https?:\/\/[^\s]+/g, (url) => cleanURL(url));
+    if (response.data && response.data.text) {
+      const tweetContent = response.data.text.replace(/https?:\/\/[^\s]+/g, (url) => cleanURL(url));
       
       if (!isValidMusicContent(tweetContent)) {
         console.log('Non-music content detected, retrying...');
         return false;
       }
 
-      console.log('Posting content as tweet:', tweetContent);
-
-      // Then post as tweet
-      const postResponse = await axios.post(config.agentUrl, {
-        user: "Synthereum",
-        text: tweetContent,
-        action: "Post",
-        forceAction: true
-      }, {
-        headers: {
-          'Authorization': config.authHeader,
-          'Content-Type': 'application/json'
-        }
-      });
-
-      console.log('Post response:', postResponse.data);
-
-      if (postResponse.data && postResponse.data.id) {
+      if (response.data.id) {
         tweetHistory.push({
-          id: postResponse.data.id,
+          id: response.data.id,
           prompt: randomPrompt,
           timestamp: new Date(),
           text: tweetContent
@@ -182,7 +132,7 @@ async function sendTweet() {
         }
       }
 
-      console.log('Tweet posted successfully:', postResponse.status);
+      console.log('Tweet posted successfully:', response.status);
       return true;
     }
     return false;
@@ -212,10 +162,9 @@ async function sendTweetWithRetry(maxRetries = 3, delay = 5000) {
 async function start() {
   console.log('Starting tweet automation...');
   console.log(`Tweet interval set to ${config.interval/1000} seconds`);
-  console.log('Creating initial tweet and poll...');
+  console.log('Creating initial tweet...');
   
   await sendTweetWithRetry();
-  await createPoll();
   
   console.log('Setting up intervals...');
   
@@ -228,11 +177,6 @@ async function start() {
     console.log('Running engagement tracking...');
     await trackEngagement();
   }, 6 * 60 * 60 * 1000);
-
-  setInterval(async () => {
-    console.log('Creating scheduled poll...');
-    await createPoll();
-  }, 24 * 60 * 60 * 1000);
 }
 
 process.on('uncaughtException', (error) => {
