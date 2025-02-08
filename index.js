@@ -25,16 +25,16 @@ const dateString = currentDate.toLocaleDateString('en-US', { month: 'long', day:
 
 const prompts = [
   `It's ${dateString} - if this is the birthday of any influential deceased musicians, share a tribute tweet about their legacy`,
-  "share a hot take about a music genre",
-  "share a hot take about a music artist",
-  "recommend a song and share its YouTube link - tell us why it matters",
-  "share an underrated track with its YouTube link - what makes it special?",
-  "pick an essential song, drop the YouTube link, and tell us its impact",
-  "share your thoughts about a topic regarding music",
-  "share a music history fact",
-  "Share album anniversary celebrations of famous albums",
-  "which classic album deserves another listen?",
-  "share a song that changed your view of music lately?"
+  "share a hot take about a music genre. Make it Twitter-length and post it.",
+  "share a hot take about a music artist. Make it Twitter-length and post it.",
+  "recommend a song and share its YouTube link - tell us why it matters. Make it Twitter-length and post it.",
+  "share an underrated track with its YouTube link - what makes it special? Make it Twitter-length and post it.",
+  "pick an essential song, drop the YouTube link, and tell us its impact. Make it Twitter-length and post it.",
+  "share your thoughts about a topic regarding music. Make it Twitter-length and post it.",
+  "share a music history fact. Make it Twitter-length and post it.",
+  "Share album anniversary celebrations of famous albums. Make it Twitter-length and post it.",
+  "which classic album deserves another listen? Make it Twitter-length and post it.",
+  "share a song that changed your view of music lately? Make it Twitter-length and post it."
 ];
 
 const tweetHistory = [];
