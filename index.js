@@ -69,8 +69,21 @@ async function getYouTubeLink(songTitle) {
     }
 }
 
-function truncateTweet(text) {
-    return text.length > 280 ? text.slice(0, 277) + "..." : text;
+function truncateTweet(text, link = null) {
+    const maxLength = 280;
+
+    if (link) {
+        const linkLength = link.length + 1; // +1 for a space before the link
+        const textLength = maxLength - linkLength;
+
+        if (text.length > textLength) {
+            return text.slice(0, textLength - 3) + "... " + link; 
+        } else {
+            return text + " " + link;
+        }
+    } else {
+        return text.length > maxLength ? text.slice(0, maxLength - 3) + "..." : text;
+    }
 }
 
 async function sendTweet() {
@@ -86,13 +99,13 @@ async function sendTweet() {
         youtubeLink = await getYouTubeLink(songRecommendation);
 
         if (youtubeLink) {
-            tweetText = `${songRecommendation} - a song that defined an era. Listen here: ${youtubeLink}`;
+            tweetText = `${songRecommendation} - a song that defined an era.`;
         } else {
             tweetText = `${songRecommendation} - an iconic track. Look it up!`;
         }
     }
 
-    tweetText = truncateTweet(tweetText);
+    tweetText = truncateTweet(tweetText, youtubeLink);
 
     console.log(`Final Tweet: ${tweetText}`);
 
